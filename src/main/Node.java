@@ -18,9 +18,10 @@ public class Node {
 	private Node nodeFromPath=null;//used for path finding
 	private Segment segTraveled;//used for path finding
 	private double distToHere;//used for path finding
-	
+
 	private int depth;//used for articulation points
 	private Node nodeFromArticulation=null;//used for articulation points
+
 
 	public Node(String[]values){
 		neighbours=new HashSet<Node>();
@@ -94,13 +95,13 @@ public class Node {
 			stack.push(String.format("%s : %4.2f km\n",segTraveled.getRoad().name() ,segTraveled.getLength()+length));
 			return total+nodeFromPath.addPathWithText(stack,0.0,segTraveled.getLength());
 		}
-		
-		
-		
-		
-		
-		
-		
+
+
+
+
+
+
+
 
 	}
 
@@ -133,7 +134,7 @@ public class Node {
 	public void addEdgeIn(Segment seg){
 		getEdgesIn().add(seg);
 	}
-	
+
 	public void addEdgeOut(Segment seg){
 		getEdgesOut().add(seg);
 	}
@@ -141,7 +142,7 @@ public class Node {
 	public Set<Segment> getEdgesIn() {
 		return edgesIn;
 	}
-	
+
 	public Set<Segment>getEdgesOut(){
 		return edgesOut;
 	}

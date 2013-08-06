@@ -48,8 +48,8 @@ public class RoadMap {
 	private int startX;
 	private int startY;
 
-	private boolean assig1=false;
-	
+	private boolean pathFinding=false;
+
 	private Set<Node> articulationPoints;
 
 
@@ -166,7 +166,7 @@ public class RoadMap {
 
 		pC = new GridBagConstraints();
 		//Create Details button
-		JButton description=new JButton("Assig 1");
+		JButton articulation = new JButton("Art Pts");
 		pC.gridx=0;
 		pC.gridy=1;
 		pC.weightx=.15;
@@ -174,11 +174,11 @@ public class RoadMap {
 		pC.anchor=GridBagConstraints.EAST;
 		pC.insets=new Insets(5, 5, 0, 0);
 		pC.ipadx=7;
-		searchBar.add(description, pC);
+		searchBar.add(articulation, pC);
 
 		pC = new GridBagConstraints();
 		//Create Details button
-		JButton pathFind=new JButton("Assig 2");
+		JButton pathFind=new JButton("A* Dist");
 		pC.gridx=1;
 		pC.gridy=1;
 		pC.weightx=.15;
@@ -299,13 +299,18 @@ public class RoadMap {
 					Node n =cols.getQuadTree().find(fromPoint);
 					if(n!=null){
 						currentIntersection=n;
-						articulationPointsSearch();
-						if(goalIntersection!=null)AStarSearch();
-						setText();
+						if(!pathFinding){
+							articulationPointsSearch();
+							setText();
+						}
+						if(pathFinding && goalIntersection!=null){
+							AStarSearch();
+							setText();
+						}
 						drawing.repaint();
 					}
 
-				}else if(arg0.getButton()==MouseEvent.BUTTON3 && !assig1){
+				}else if(arg0.getButton()==MouseEvent.BUTTON3 && pathFinding){
 					if(origin==null||scale==Double.NaN)return;
 					Location fromPoint=Location.newFromPoint(arg0.getPoint(), origin, scale);
 					Node n =cols.getQuadTree().find(fromPoint);
@@ -423,12 +428,15 @@ public class RoadMap {
 		});
 
 		//assig1 button listener
-		description.addActionListener(new ActionListener() {
+		articulation.addActionListener(new ActionListener() {
 
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
-				assig1=true;
-				setText();
+				pathFinding=false;
+				if(currentIntersection!=null){
+					articulationPointsSearch();
+					setText();
+				}
 				drawing.repaint();
 			}
 		});
@@ -437,8 +445,11 @@ public class RoadMap {
 
 			@Override
 			public void actionPerformed(ActionEvent e) {
-				assig1=false;
-				setText();
+				pathFinding=true;
+				if(currentIntersection !=null && goalIntersection!=null){
+					AStarSearch();
+					setText();
+				}
 				drawing.repaint();
 			}
 		});
@@ -457,7 +468,7 @@ public class RoadMap {
 	}
 
 	public void setText(){
-		if(assig1){
+		if(!pathFinding){
 			textArea.setText("");
 			if(currentRoadObj!=null)textArea.append("Seleted Road\n"+currentRoadObj.get(0).getDetails()+"\n");
 			if(currentIntersection!=null)textArea.append("Selected Intersection\n"+currentIntersection.getDetails());
@@ -523,7 +534,7 @@ public class RoadMap {
 		}
 		g2D.setColor(Color.BLACK);
 
-		if(assig1 && currentRoadObj!=null){
+		if(currentRoadObj!=null){
 			g2D.setColor(Color.red);
 			for(Road r : currentRoadObj){
 				for(Segment s2:r.getSegments()){
@@ -539,16 +550,16 @@ public class RoadMap {
 			currentIntersection.draw(g2D,origin,scale,8);
 		}
 
-		if(!assig1 && goalIntersection!=null){
+		if(pathFinding && goalIntersection!=null){
 			g2D.setColor(Color.yellow);
 			goalIntersection.draw(g2D,origin,scale,8);
 		}
 
-		if(!assig1 && currentIntersection!=null && goalIntersection!=null){
+		if(pathFinding && currentIntersection!=null && goalIntersection!=null){
 			goalIntersection.drawPath(g2D,origin,scale);
 		}
-		
-		if(!assig1 && currentIntersection!=null){
+
+		if(!pathFinding && currentIntersection!=null){
 			g2D.setColor(Color.MAGENTA);
 			for(Node n : articulationPoints)
 				n.draw(g2D, origin, scale, 8);
@@ -566,7 +577,7 @@ public class RoadMap {
 	 * 
 	 * 
 	 */
-	
+
 	//TODO fix when goal intersection is in a different set from current. Can never reach so forever search in loop ))))):(((((
 	public void AStarSearch(){		
 
@@ -604,16 +615,16 @@ public class RoadMap {
 		drawing.repaint();
 
 	}
-	
+
 	public void articulationPointsSearch(){
 		articulationPoints = new HashSet<Node>();
 		for(Node n : cols.getNodeMap().values()){
 			n.setDepth(-1);			
 		}
-		
+
 		currentIntersection.setDepth(0);
 		int numSubtrees=0;
-		
+
 		for(Node n : currentIntersection.getNeighbours()){
 			if(n.getDepth()==-1){
 				recArtPts(n, 1, currentIntersection);
@@ -622,7 +633,7 @@ public class RoadMap {
 		}
 		if(numSubtrees>1)articulationPoints.add(currentIntersection);		
 	}
-	
+
 	public int recArtPts(Node node, int depth, Node fromNode){
 		node.setDepth(depth);
 		int reachBack = depth;
@@ -639,7 +650,7 @@ public class RoadMap {
 		}
 		return reachBack;
 	}
-	
+
 
 
 
