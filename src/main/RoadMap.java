@@ -52,6 +52,8 @@ public class RoadMap {
 
 	private Set<Node> articulationPoints;
 
+	private ArrayList<Node> debugSearch;
+
 
 
 
@@ -82,7 +84,7 @@ public class RoadMap {
 		//basic frame initialization
 		frame = new JFrame("Auckland Road Maps");
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE); //setting the default close operation of JFrame
-		frame.setSize(1000,700);
+		frame.setSize(800,600);
 		frame.setResizable(false);
 
 		//Get the container for the frame's content
@@ -564,6 +566,14 @@ public class RoadMap {
 			for(Node n : articulationPoints)
 				n.draw(g2D, origin, scale, 8);
 		}
+		//debug code for seing the nodes explored
+		if(debugSearch!=null){
+			g2D.setColor(Color.CYAN);
+			for(Node n : debugSearch){
+				n.draw(g2D, origin, scale, 6);
+			}
+		}
+
 
 		//debug code for seeing quadtree visually
 		//cols.getQuadTree().draw(g2D,origin,scale);
@@ -579,7 +589,9 @@ public class RoadMap {
 	 */
 
 	//TODO fix when goal intersection is in a different set from current. Can never reach so forever search in loop ))))):(((((
-	public void AStarSearch(){		
+	public void AStarSearch(){
+		int count=0;
+		debugSearch = new ArrayList<Node>(); //debug code
 
 		PriorityQueue<AStarNode> fringe= new PriorityQueue<AStarNode>();
 		for(Node n:cols.getNodeMap().values()){
@@ -592,26 +604,32 @@ public class RoadMap {
 		AStarNode startNode = new AStarNode(currentIntersection, null, null, 0, currentIntersection.getLoc().distanceTo(goalIntersection.getLoc()));
 		fringe.add(startNode);
 		while(!fringe.isEmpty()){
-			System.out.println("yep");
 			AStarNode searchNode = fringe.poll();
+			// debug code for seeing nodes explored
+			debugSearch.add(searchNode.getRepNode());
+			drawing.repaint();
 			Node intersection= searchNode.getRepNode();
-			intersection.setVisited(true);
-			intersection.setNodeFrom(searchNode.getFromNode());
-			intersection.setPathDist(searchNode.getDistToHere());
-			intersection.setSegTraveled(searchNode.getSegTraveled());
-			if(intersection.equals(goalIntersection))break;
-			for(Segment s:intersection.getEdgesOut()){
-				Node neighbour;
-				if(s.getNode1()==intersection.getID())neighbour=cols.getNodeMap().get(s.getNode2());
-				else neighbour=cols.getNodeMap().get(s.getNode1());
-				if(neighbour!=null && !neighbour.isVisited()){
-					double distToNeigh=intersection.getDistToHere()+s.getLength();
-					double estTotalDist=distToNeigh+neighbour.getLoc().distanceTo(goalIntersection.getLoc());
-					AStarNode newAStarNode = new AStarNode(neighbour, intersection,s, distToNeigh, estTotalDist);
-					fringe.add(newAStarNode);
+			if(!intersection.isVisited()){
+				intersection.setVisited(true);
+				count++;
+				intersection.setNodeFrom(searchNode.getFromNode());
+				intersection.setPathDist(searchNode.getDistToHere());
+				intersection.setSegTraveled(searchNode.getSegTraveled());
+				if(intersection.equals(goalIntersection))break;
+				for(Segment s:intersection.getEdgesOut()){
+					Node neighbour;
+					if(s.getNode1()==intersection.getID())neighbour=cols.getNodeMap().get(s.getNode2());
+					else neighbour=cols.getNodeMap().get(s.getNode1());
+					if(neighbour!=null && !neighbour.isVisited()){
+						double distToNeigh=searchNode.getDistToHere()+s.getLength();
+						double estTotalDist=distToNeigh+neighbour.getLoc().distanceTo(goalIntersection.getLoc());
+						AStarNode newAStarNode = new AStarNode(neighbour, intersection, s, distToNeigh, estTotalDist);
+						fringe.add(newAStarNode);
+					}
 				}
 			}
 		}
+		System.out.println(count);
 		drawing.repaint();
 
 	}

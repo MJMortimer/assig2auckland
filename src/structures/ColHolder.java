@@ -88,7 +88,7 @@ public class ColHolder {
 				Segment newSeg=new Segment(values);
 				Road road =roadMap.get(newSeg.getRoadID());
 				road.addSegment(newSeg);
-				newSeg.setRoad(road);//hmm
+				newSeg.setRoad(road);
 				getSegList().add(newSeg);
 
 				Node node1=getNodeMap().get(newSeg.getNode1());
