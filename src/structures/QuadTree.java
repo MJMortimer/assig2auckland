@@ -16,7 +16,6 @@ public class QuadTree {
 	private boolean isLeaf;
 	private QuadTree tL, tR, bL, bR;
 	private int maxElements;
-	private Location center;
 	private Rectangle2D.Double bounds;
 	private List<Node> intersections;
 

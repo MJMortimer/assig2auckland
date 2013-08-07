@@ -48,12 +48,20 @@ public class RoadMap {
 	private int startX;
 	private int startY;
 
-	private boolean pathFinding=false;
+	private Mode modeType = Mode.DESCRIPTION;
+
 
 	private Set<Node> articulationPoints;
 
 	private ArrayList<Node> debugSearch;
 
+	private static enum Mode{
+		DESCRIPTION,
+		ARTICULATION_POINTS,
+		PATH_FINDING_DIST,
+		PATH_FINDING_TIME
+
+	}
 
 
 
@@ -74,7 +82,7 @@ public class RoadMap {
 			cols = new ColHolder(dir);
 			searchField.setTrie(cols.getTrie());
 			initBounds();
-			cols.addQuadTree(maxX,maxY,minX,minY);
+			cols.addQuadTree(maxX+2,maxY+2,minX-1,minY-1);
 			init=false;
 			drawing.repaint();
 		}
@@ -154,42 +162,6 @@ public class RoadMap {
 		pC.fill=GridBagConstraints.VERTICAL;
 		searchBar.add(search,pC);
 
-		pC = new GridBagConstraints();
-		//Create mode label
-		JLabel mode=new JLabel("Mode");
-		pC.gridx=0;
-		pC.gridy=1;
-		pC.weightx=.15;
-		pC.fill=GridBagConstraints.VERTICAL;
-		pC.anchor=GridBagConstraints.WEST;
-		pC.insets=new Insets(5, 5, 0, 0);
-		searchBar.add(mode, pC);
-
-
-		pC = new GridBagConstraints();
-		//Create Details button
-		JButton articulation = new JButton("Art Pts");
-		pC.gridx=0;
-		pC.gridy=1;
-		pC.weightx=.15;
-		pC.fill=GridBagConstraints.VERTICAL;
-		pC.anchor=GridBagConstraints.EAST;
-		pC.insets=new Insets(5, 5, 0, 0);
-		pC.ipadx=7;
-		searchBar.add(articulation, pC);
-
-		pC = new GridBagConstraints();
-		//Create Details button
-		JButton pathFind=new JButton("A* Dist");
-		pC.gridx=1;
-		pC.gridy=1;
-		pC.weightx=.15;
-		pC.fill=GridBagConstraints.VERTICAL;
-		pC.anchor=GridBagConstraints.WEST;
-		pC.insets=new Insets(5, 5, 0, 0);
-		pC.ipadx=20;
-		searchBar.add(pathFind, pC);
-
 
 		searchBar.setBackground(Color.LIGHT_GRAY);
 		c.gridx = 0;//first column of content pane
@@ -234,6 +206,16 @@ public class RoadMap {
 		JMenuItem open =new JMenuItem("Open..");
 		file.add(open);
 		mBar.add(file);
+
+		JMenu options = new JMenu("Options");
+		JMenuItem descriptionMode = new JMenuItem("Assignment 1 Intersection Description.");
+		options.add(descriptionMode);
+		JMenuItem articulationMode = new JMenuItem("Articulation Point Search");
+		options.add(articulationMode);
+		JMenuItem aStarDistMode = new JMenuItem("A* Distribution with distance.");
+		options.add(aStarDistMode);
+		mBar.add(options);
+
 		frame.setJMenuBar(mBar);
 
 		open.addActionListener(new ActionListener() {
@@ -252,6 +234,43 @@ public class RoadMap {
 
 			}
 		});
+
+		descriptionMode.addActionListener(new ActionListener() {
+
+			@Override
+			public void actionPerformed(ActionEvent arg0) {
+				modeType = Mode.DESCRIPTION;
+				drawing.repaint();
+				setText();
+			}
+		});
+
+		articulationMode.addActionListener(new ActionListener() {
+
+			@Override
+			public void actionPerformed(ActionEvent arg0) {
+				modeType = Mode.ARTICULATION_POINTS;
+				articulationPointsSearch();
+				setText();
+				drawing.repaint();
+			}
+		});	
+
+		aStarDistMode.addActionListener(new ActionListener() {
+
+			@Override
+			public void actionPerformed(ActionEvent arg0) {
+				modeType = Mode.PATH_FINDING_DIST;	
+				if(currentIntersection !=null && goalIntersection!=null){
+					AStarSearch();
+					setText();
+				}
+				drawing.repaint();
+			}
+		});
+
+
+
 
 		/////Definitions of all actions and listeners///////
 		////////////////////////////////////////////////////
@@ -301,18 +320,23 @@ public class RoadMap {
 					Node n =cols.getQuadTree().find(fromPoint);
 					if(n!=null){
 						currentIntersection=n;
-						if(!pathFinding){
-							articulationPointsSearch();
+
+
+						//TODO move to just performing search after selection on menu bar. Reimplement for description mode
+						if(modeType == Mode.DESCRIPTION){
 							setText();
 						}
-						if(pathFinding && goalIntersection!=null){
+
+
+
+						if((modeType == Mode.PATH_FINDING_DIST || modeType == Mode.PATH_FINDING_TIME) && goalIntersection!=null){
 							AStarSearch();
 							setText();
 						}
 						drawing.repaint();
 					}
 
-				}else if(arg0.getButton()==MouseEvent.BUTTON3 && pathFinding){
+				}else if(arg0.getButton()==MouseEvent.BUTTON3 && (modeType == Mode.PATH_FINDING_DIST || modeType == Mode.PATH_FINDING_TIME)){
 					if(origin==null||scale==Double.NaN)return;
 					Location fromPoint=Location.newFromPoint(arg0.getPoint(), origin, scale);
 					Node n =cols.getQuadTree().find(fromPoint);
@@ -429,7 +453,7 @@ public class RoadMap {
 			}
 		});
 
-		//assig1 button listener
+		/*//assig1 button listener
 		articulation.addActionListener(new ActionListener() {
 
 			@Override
@@ -454,7 +478,7 @@ public class RoadMap {
 				}
 				drawing.repaint();
 			}
-		});
+		});*/
 
 
 
@@ -470,11 +494,11 @@ public class RoadMap {
 	}
 
 	public void setText(){
-		if(!pathFinding){
+		if(modeType == Mode.DESCRIPTION){
 			textArea.setText("");
 			if(currentRoadObj!=null)textArea.append("Seleted Road\n"+currentRoadObj.get(0).getDetails()+"\n");
 			if(currentIntersection!=null)textArea.append("Selected Intersection\n"+currentIntersection.getDetails());
-		}else{
+		}else if(modeType == Mode.PATH_FINDING_DIST || modeType == Mode.PATH_FINDING_TIME){
 			if(currentIntersection!=null && goalIntersection!=null){
 				Stack<String> stack=new Stack<String>();
 				double total = goalIntersection.addPathWithText(stack,0,0);
@@ -525,9 +549,7 @@ public class RoadMap {
 
 
 		for(Segment s:cols.getSegList()){
-
 			s.draw(g2D,origin,scale);
-
 		}		
 
 		g2D.setColor(Color.BLUE);
@@ -547,32 +569,47 @@ public class RoadMap {
 			g2D.setColor(Color.BLACK);
 		}
 
-		if(currentIntersection!=null){
-			g2D.setColor(Color.green);
-			currentIntersection.draw(g2D,origin,scale,8);
-		}
 
-		if(pathFinding && goalIntersection!=null){
+
+		if( (modeType == Mode.PATH_FINDING_DIST || modeType == Mode.PATH_FINDING_TIME) && goalIntersection!=null){
 			g2D.setColor(Color.yellow);
-			goalIntersection.draw(g2D,origin,scale,8);
+			int size = scale>10? 8 : 4;
+			goalIntersection.draw(g2D,origin,scale,size);
 		}
 
-		if(pathFinding && currentIntersection!=null && goalIntersection!=null){
+		if( (modeType == Mode.PATH_FINDING_DIST || modeType == Mode.PATH_FINDING_TIME) && currentIntersection!=null && goalIntersection!=null){
 			goalIntersection.drawPath(g2D,origin,scale);
 		}
 
-		if(!pathFinding && currentIntersection!=null){
+		if(modeType == Mode.ARTICULATION_POINTS){
 			g2D.setColor(Color.MAGENTA);
+			int size = scale>10? 8 : 4;
 			for(Node n : articulationPoints)
-				n.draw(g2D, origin, scale, 8);
+				n.draw(g2D, origin, scale, size);
+			for(Node n : cols.getUnionFind().getSets()){
+				g2D.setColor(Color.RED);
+				n.draw(g2D, origin, scale, size);
+			}
+			g2D.setColor(Color.BLACK);
 		}
+
+		if(currentIntersection!=null){
+			g2D.setColor(Color.green);
+			int size = scale>10? 8 : 4;
+			currentIntersection.draw(g2D,origin,scale,size);
+		}
+		g2D.setColor(Color.BLACK);
+
 		//debug code for seing the nodes explored
-		if(debugSearch!=null){
+		/*if(debugSearch!=null){
 			g2D.setColor(Color.CYAN);
 			for(Node n : debugSearch){
 				n.draw(g2D, origin, scale, 6);
 			}
 		}
+				g2D.setColor(Color.BLACK);
+
+		 */
 
 
 		//debug code for seeing quadtree visually
@@ -636,20 +673,28 @@ public class RoadMap {
 
 	public void articulationPointsSearch(){
 		articulationPoints = new HashSet<Node>();
+		//System.out.println(cols.getUnionFind().getSets().size());
 		for(Node n : cols.getNodeMap().values()){
 			n.setDepth(-1);			
 		}
 
-		currentIntersection.setDepth(0);
-		int numSubtrees=0;
+		Node root = null;
+		for(Node n : cols.getUnionFind().getSets()){
+			System.out.println("algood?");
+			root = n;
 
-		for(Node n : currentIntersection.getNeighbours()){
-			if(n.getDepth()==-1){
-				recArtPts(n, 1, currentIntersection);
-				numSubtrees++;
+
+			root.setDepth(0);
+			int numSubtrees=0;
+
+			for(Node node : root.getNeighbours()){
+				if(node.getDepth()==-1){
+					recArtPts(node, 1, root);
+					numSubtrees++;
+				}
 			}
+			if(numSubtrees>1)articulationPoints.add(root);		
 		}
-		if(numSubtrees>1)articulationPoints.add(currentIntersection);		
 	}
 
 	public int recArtPts(Node node, int depth, Node fromNode){

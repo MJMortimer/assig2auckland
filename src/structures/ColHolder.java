@@ -23,11 +23,26 @@ public class ColHolder {
 	private Map<Integer,Road>roadMap;
 	private List<Segment>segList;
 	private QuadTree quadTree;
+	private UnionFind disjSets;
 
 	public ColHolder(String dir){
 		initTrie(dir);	
 		initNodeMap(dir);
+		initUnionFind();
 		initRoadSegs(dir);
+		System.out.println("after: "+disjSets.getSets().size());
+		
+
+
+	}
+
+
+	private void initUnionFind() {
+		disjSets = new UnionFind();
+		for(Node n : nodeMap.values()){
+			disjSets.makeSet(n);
+		}
+		System.out.println("before: "+disjSets.getSets().size());
 
 	}
 
@@ -61,7 +76,6 @@ public class ColHolder {
 		Scanner scan;
 		try {
 			scan = new Scanner(file);
-			scan.nextLine();
 			while(scan.hasNextLine()){
 				String line =scan.nextLine();
 				String[] values = line.split("\t");
@@ -93,10 +107,15 @@ public class ColHolder {
 
 				Node node1=getNodeMap().get(newSeg.getNode1());
 				Node node2=getNodeMap().get(newSeg.getNode2());
-				if(node1!=null&&node2!=null){
-					node1.addNeighbour(node2);
-					node2.addNeighbour(node1);
-				}
+
+				//union the two nodes in the UnionFind structure. Helpful for articulation
+				if(node1!=null && node2!=null)
+					disjSets.union(node1, node2);
+
+					if(node1!=null&&node2!=null){
+						node1.addNeighbour(node2);
+						node2.addNeighbour(node1);
+					}
 				if(node1!=null){
 					node1.addRoad(road);
 					road.addIntersection(node1);
@@ -120,12 +139,12 @@ public class ColHolder {
 	public TrieHeader getTrie(){
 		return this.trie;
 	}
-	
+
 	public void addQuadTree(double maxX, double maxY, double minX, double minY){
 		setQuadTree(new QuadTree(maxX,maxY,minX,minY));
 		for(Node n:this.getNodeMap().values()){
 			getQuadTree().add(n);
-			
+
 		}
 	}
 
@@ -158,6 +177,14 @@ public class ColHolder {
 	public void setQuadTree(QuadTree quadTree) {
 		this.quadTree = quadTree;
 	}
+
+
+	public UnionFind getUnionFind() {
+		return disjSets;
+	}
+
+
+	
 
 
 

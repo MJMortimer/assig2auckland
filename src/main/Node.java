@@ -21,6 +21,8 @@ public class Node {
 
 	private int depth;//used for articulation points
 	private Node nodeFromArticulation=null;//used for articulation points
+	
+	private Node parent;//used for union find (For articulation)
 
 
 	public Node(String[]values){
@@ -173,6 +175,14 @@ public class Node {
 
 	public void setNodeFromArticulation(Node nodeFromArticulation) {
 		this.nodeFromArticulation = nodeFromArticulation;
+	}
+	
+	public void setParent(Node n){
+		this.parent=n;
+	}
+	
+	public Node getParent(){
+		return this.parent;
 	}
 
 
