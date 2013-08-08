@@ -2,6 +2,9 @@ package main;
 
 import javax.swing.*;
 
+import articulation.ArtNode;
+import articulation.StackElem;
+
 
 import pathSearch.AStarNode;
 
@@ -19,6 +22,7 @@ import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
 import java.awt.event.MouseWheelEvent;
 import java.awt.event.MouseWheelListener;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.PriorityQueue;
@@ -582,6 +586,7 @@ public class RoadMap {
 		}
 
 		if(modeType == Mode.ARTICULATION_POINTS){
+			System.out.println(articulationPoints.size());
 			g2D.setColor(Color.MAGENTA);
 			int size = scale>10? 8 : 4;
 			for(Node n : articulationPoints)
@@ -680,16 +685,13 @@ public class RoadMap {
 
 		Node root = null;
 		for(Node n : cols.getUnionFind().getSets()){
-			System.out.println("algood?");
 			root = n;
-
-
 			root.setDepth(0);
 			int numSubtrees=0;
 
 			for(Node node : root.getNeighbours()){
 				if(node.getDepth()==-1){
-					recArtPts(node, 1, root);
+					iterDFS(node, 0, root);
 					numSubtrees++;
 				}
 			}
@@ -712,6 +714,41 @@ public class RoadMap {
 			}
 		}
 		return reachBack;
+	}
+
+	
+	public void iterDFS(Node firstNode, int depth, Node root){
+		Stack<StackElem> stack = new Stack<StackElem>();
+		StackElem first = new StackElem(firstNode, 1, new StackElem(root, 0, null));
+		stack.push(first);
+		while(!stack.isEmpty()){
+			StackElem elem = stack.peek();
+			Node node = elem.getFirstNode();
+			if(elem.getChildren() == null){
+				node.setDepth(elem.getDepth());
+				elem.setReach(elem.getDepth());
+				elem.setChildren(new ArrayDeque<Node>());
+				for(Node n : node.getNeighbours()){
+					if(!n.equals(elem.getStackElemFrom().getFirstNode())){
+						elem.getChildren().offer(n);
+					}
+				}
+			}else if( !elem.getChildren().isEmpty()){
+				Node child = elem.getChildren().poll();
+				if(child.getDepth()!=-1){
+					elem.setReach(Math.min(elem.getReach(), child.getDepth()));
+				}else 
+					stack.push(new StackElem(child, node.getDepth()+1, elem));
+			}else{
+				if(node != firstNode){
+					if(elem.getReach() >= elem.getStackElemFrom().getDepth()){
+						articulationPoints.add(elem.getStackElemFrom().getFirstNode());
+					}
+					elem.getStackElemFrom().setReach(Math.min(elem.getStackElemFrom().getReach(),elem.getReach()));
+				}
+				stack.pop();
+			}
+		}
 	}
 
 
