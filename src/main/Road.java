@@ -82,6 +82,19 @@ public class Road {
 
 	}
 	
+	public double getSpeedValue(){
+		switch(speed){
+		case(0):return 5;
+		case(1):return 20;
+		case(2):return 40;
+		case(3):return 60;
+		case(4):return 80;
+		case(5):return 100;
+		case(6):return 110;
+		default:return -1;
+		}
+	}
+	
 	private String decodeClass() {
 		switch(roadClass){
 			case(1):return "Major highway-thick";
@@ -105,6 +118,14 @@ public class Road {
 	}
 	public boolean isOneWay(){
 		return oneWay==1;
+	}
+	
+	public double getClassType(){
+		return this.roadClass;
+	}
+	
+	public boolean isForCars(){
+		return notForCar == 0;
 	}
 
 

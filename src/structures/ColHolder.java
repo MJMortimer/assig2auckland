@@ -30,7 +30,7 @@ public class ColHolder {
 		initNodeMap(dir);
 		initUnionFind();
 		initRoadSegs(dir);
-		System.out.println("after: "+disjSets.getSets().size());
+		//System.out.println("after: "+disjSets.getSets().size());
 		
 
 
@@ -42,7 +42,7 @@ public class ColHolder {
 		for(Node n : nodeMap.values()){
 			disjSets.makeSet(n);
 		}
-		System.out.println("before: "+disjSets.getSets().size());
+		//System.out.println("before: "+disjSets.getSets().size());
 
 	}
 

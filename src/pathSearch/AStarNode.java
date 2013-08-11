@@ -7,33 +7,33 @@ public class AStarNode implements Comparable<AStarNode> {
 	private Node repNode;
 	private Node fromNode;
 	private Segment segTraveled;
-	private double distToHere;
-	private double estDistTotal;
+	private double costToHere;
+	private double estCostTotal;
 	
 	public AStarNode(Node node, Node from, Segment traveled, double toHere, double estTotal){
 		setRepNode(node);
 		setFromNode(from);
-		setDistToHere(toHere);
-		setEstDistTotal(estTotal);
+		setCostToHere(toHere);
+		setEstCostTotal(estTotal);
 		segTraveled=traveled;
 	}
 	
 
 	@Override
 	public int compareTo(AStarNode o) {
-		if(this.getEstDistTotal()<o.getEstDistTotal())return -1;
-		else if(this.getEstDistTotal()>o.getEstDistTotal())return 1;
+		if(this.getEstCostTotal()<o.getEstCostTotal())return -1;
+		else if(this.getEstCostTotal()>o.getEstCostTotal())return 1;
 		else return 0;
 	}
 
 
-	private double getEstDistTotal() {
-		return estDistTotal;
+	private double getEstCostTotal() {
+		return estCostTotal;
 	}
 
 
-	private void setEstDistTotal(double estDistTotal) {
-		this.estDistTotal = estDistTotal;
+	private void setEstCostTotal(double estDistTotal) {
+		this.estCostTotal = estDistTotal;
 	}
 
 
@@ -57,13 +57,13 @@ public class AStarNode implements Comparable<AStarNode> {
 	}
 
 
-	public double getDistToHere() {
-		return distToHere;
+	public double getCostToHere() {
+		return costToHere;
 	}
 
 
-	public void setDistToHere(double distToHere) {
-		this.distToHere = distToHere;
+	public void setCostToHere(double distToHere) {
+		this.costToHere = distToHere;
 	}
 
 

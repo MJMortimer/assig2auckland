@@ -21,7 +21,7 @@ public class Node {
 
 	private int depth;//used for articulation points
 	private Node nodeFromArticulation=null;//used for articulation points
-	
+
 	private Node parent;//used for union find (For articulation)
 
 
@@ -89,22 +89,36 @@ public class Node {
 		return segTraveled.getLength()+nodeFromPath.addPath();
 	}
 
-	public double addPathWithText(Stack<String> stack, double length, double total ) {
+	public double addPathWithTextDist(Stack<String> stack, double length, double total ) {
 		if(segTraveled==null)return total;
 		if(nodeFromPath!=null && nodeFromPath.segTraveled!=null && segTraveled.getRoad().name().equals(nodeFromPath.getSegTraveled().getRoad().name())){
-			return total+nodeFromPath.addPathWithText(stack, segTraveled.getLength()+length,segTraveled.getLength());
+			return total+nodeFromPath.addPathWithTextDist(stack, segTraveled.getLength()+length,segTraveled.getLength());
 		}else{
 			stack.push(String.format("%s : %4.2f km\n",segTraveled.getRoad().name() ,segTraveled.getLength()+length));
-			return total+nodeFromPath.addPathWithText(stack,0.0,segTraveled.getLength());
+			return total+nodeFromPath.addPathWithTextDist(stack,0.0,segTraveled.getLength());
+		}
+	}
+
+	public double addPathWithTextTime(Stack<String> stack, double time, double total ) {
+		if(segTraveled==null)return total;
+		if(nodeFromPath!=null && nodeFromPath.segTraveled!=null && segTraveled.getRoad().name().equals(nodeFromPath.getSegTraveled().getRoad().name())){
+			return total+nodeFromPath.addPathWithTextTime(stack, (segTraveled.getLength() / segTraveled.getRoad().getSpeedValue())+time,segTraveled.getLength() / segTraveled.getRoad().getSpeedValue());
+		}else{
+			stack.push(String.format("%s : %4.2f minutes\n",segTraveled.getRoad().name() ,(((segTraveled.getLength() /segTraveled.getRoad().getSpeedValue()) +time)*60)));
+			return total+nodeFromPath.addPathWithTextTime(stack,0.0,segTraveled.getLength() / segTraveled.getRoad().getSpeedValue());
+		}
+	}
+
+	public double addPTime(Stack<String> stack, double currentTime, double totalTime){
+		if(segTraveled == null)return totalTime;
+		if(nodeFromPath!=null && nodeFromPath.segTraveled!=null && segTraveled.getRoad().name().equals(nodeFromPath.getSegTraveled().getRoad().name())){ 
+			return totalTime + nodeFromPath.addPTime(stack, currentTime + (segTraveled.getLength() / segTraveled.getRoad().getSpeedValue()),totalTime);
+		}else{
+			stack.push(String.format("%s : %4.2f minutes\n", segTraveled.getRoad().name(), (currentTime + (segTraveled.getLength() / segTraveled.getRoad().getSpeedValue()))*60));
+			return totalTime + nodeFromPath.addPTime(stack, 0.0, segTraveled.getLength()/segTraveled.getRoad().getSpeedValue());
 		}
 
-
-
-
-
-
-
-
+		
 	}
 
 
@@ -128,7 +142,7 @@ public class Node {
 		this.nodeFromPath = nodeFrom;
 	}
 
-	public void setPathDist(double distToHere) {
+	public void setPathCost(double distToHere) {
 		this.distToHere=distToHere;
 
 	}
@@ -176,11 +190,11 @@ public class Node {
 	public void setNodeFromArticulation(Node nodeFromArticulation) {
 		this.nodeFromArticulation = nodeFromArticulation;
 	}
-	
+
 	public void setParent(Node n){
 		this.parent=n;
 	}
-	
+
 	public Node getParent(){
 		return this.parent;
 	}

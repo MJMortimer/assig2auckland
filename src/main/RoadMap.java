@@ -216,8 +216,10 @@ public class RoadMap {
 		options.add(descriptionMode);
 		JMenuItem articulationMode = new JMenuItem("Articulation Point Search");
 		options.add(articulationMode);
-		JMenuItem aStarDistMode = new JMenuItem("A* Distribution with distance.");
+		JMenuItem aStarDistMode = new JMenuItem("A* Path With Distance.");
 		options.add(aStarDistMode);
+		JMenuItem aStarTimeMode = new JMenuItem("A* Path With Time");
+		options.add(aStarTimeMode);
 		mBar.add(options);
 
 		frame.setJMenuBar(mBar);
@@ -270,6 +272,19 @@ public class RoadMap {
 					setText();
 				}
 				drawing.repaint();
+			}
+		});
+		
+		aStarTimeMode.addActionListener(new ActionListener() {
+			
+			@Override
+			public void actionPerformed(ActionEvent arg0) {
+				modeType = Mode.PATH_FINDING_TIME;
+				if(currentIntersection != null && goalIntersection != null){
+					AStarSearch();
+					setText();
+				}
+				
 			}
 		});
 
@@ -502,15 +517,36 @@ public class RoadMap {
 			textArea.setText("");
 			if(currentRoadObj!=null)textArea.append("Seleted Road\n"+currentRoadObj.get(0).getDetails()+"\n");
 			if(currentIntersection!=null)textArea.append("Selected Intersection\n"+currentIntersection.getDetails());
-		}else if(modeType == Mode.PATH_FINDING_DIST || modeType == Mode.PATH_FINDING_TIME){
+		}else if(modeType == Mode.PATH_FINDING_DIST){
 			if(currentIntersection!=null && goalIntersection!=null){
 				Stack<String> stack=new Stack<String>();
-				double total = goalIntersection.addPathWithText(stack,0,0);
+				double total = goalIntersection.addPathWithTextDist(stack,0,0);
+				
+				Stack<String> stack2=new Stack<String>();
+				double totalTime = goalIntersection.addPTime(stack2,0,0);
+				
+				//System.out.println(totalTime);
 				textArea.setText("");
 				while(!stack.isEmpty()){
 					textArea.append(stack.pop());
 				}
-				textArea.append(String.format("Total Distance: %4.2fkm", total));
+				textArea.append(String.format("Total Time: %4.2f minutes\n", totalTime*60));
+				textArea.append(String.format("Total Distance: %4.2fkm\n", total));
+			}
+		}else if(modeType == Mode.PATH_FINDING_TIME){
+			if(currentIntersection!=null && goalIntersection!=null){
+				Stack<String> stack=new Stack<String>();
+				double total = goalIntersection.addPTime(stack,0,0);
+				
+				Stack<String> stack2=new Stack<String>();
+				double totalDist = goalIntersection.addPathWithTextDist(stack,0,0);
+				
+				textArea.setText("");
+				while(!stack.isEmpty()){
+					textArea.append(stack.pop());
+				}
+				textArea.append(String.format("Total Distance: %4.2f minutes\n", total*60));
+				textArea.append(String.format("Total Distance: %4.2fkm\n", totalDist));
 			}
 		}
 	}
@@ -586,15 +622,15 @@ public class RoadMap {
 		}
 
 		if(modeType == Mode.ARTICULATION_POINTS){
-			System.out.println(articulationPoints.size());
+			//System.out.println(articulationPoints.size());
 			g2D.setColor(Color.MAGENTA);
 			int size = scale>10? 8 : 4;
 			for(Node n : articulationPoints)
 				n.draw(g2D, origin, scale, size);
-			for(Node n : cols.getUnionFind().getSets()){
+			/*for(Node n : cols.getUnionFind().getSets()){
 				g2D.setColor(Color.RED);
 				n.draw(g2D, origin, scale, size);
-			}
+			}*/
 			g2D.setColor(Color.BLACK);
 		}
 
@@ -640,38 +676,39 @@ public class RoadMap {
 			n.setVisited(false);
 			n.setNodeFrom(null);
 			n.setSegTraveled(null);
-			n.setPathDist(0);
+			n.setPathCost(0);
 		}
 
-		AStarNode startNode = new AStarNode(currentIntersection, null, null, 0, currentIntersection.getLoc().distanceTo(goalIntersection.getLoc()));
+		AStarNode startNode = new AStarNode(currentIntersection, null, null, 0, estimate(currentIntersection));
 		fringe.add(startNode);
 		while(!fringe.isEmpty()){
 			AStarNode searchNode = fringe.poll();
 			// debug code for seeing nodes explored
 			debugSearch.add(searchNode.getRepNode());
-			drawing.repaint();
-			Node intersection= searchNode.getRepNode();
+			//drawing.repaint();
+			Node intersection = searchNode.getRepNode();
 			if(!intersection.isVisited()){
 				intersection.setVisited(true);
 				count++;
 				intersection.setNodeFrom(searchNode.getFromNode());
-				intersection.setPathDist(searchNode.getDistToHere());
+				intersection.setPathCost(searchNode.getCostToHere());
 				intersection.setSegTraveled(searchNode.getSegTraveled());
 				if(intersection.equals(goalIntersection))break;
 				for(Segment s:intersection.getEdgesOut()){
+					if(!s.getRoad().isForCars())continue;
 					Node neighbour;
 					if(s.getNode1()==intersection.getID())neighbour=cols.getNodeMap().get(s.getNode2());
 					else neighbour=cols.getNodeMap().get(s.getNode1());
 					if(neighbour!=null && !neighbour.isVisited()){
-						double distToNeigh=searchNode.getDistToHere()+s.getLength();
-						double estTotalDist=distToNeigh+neighbour.getLoc().distanceTo(goalIntersection.getLoc());
-						AStarNode newAStarNode = new AStarNode(neighbour, intersection, s, distToNeigh, estTotalDist);
+						double costToNeigh=searchNode.getCostToHere()+cost(s);
+						double estTotalCost=costToNeigh+estimate(neighbour);
+						AStarNode newAStarNode = new AStarNode(neighbour, intersection, s, costToNeigh, estTotalCost);
 						fringe.add(newAStarNode);
 					}
 				}
 			}
 		}
-		System.out.println(count);
+		//System.out.println(count);
 		drawing.repaint();
 
 	}
@@ -751,6 +788,29 @@ public class RoadMap {
 		}
 	}
 
+	
+	public double estimate(Node n){
+		if(modeType == Mode.PATH_FINDING_DIST){
+			return n.getLoc().distanceTo(goalIntersection.getLoc());
+		}else if(modeType == Mode.PATH_FINDING_TIME){
+			double speedValue = 110;
+			double classType = 5;
+			return ((n.getLoc().distanceTo(goalIntersection.getLoc())) / (speedValue))/classType;
+		}
+		else throw new UnsupportedOperationException("Mode type is incorrect");
+	}
+	
+	public double cost(Segment s){
+		if(modeType == Mode.PATH_FINDING_DIST){
+			return s.getLength();
+		}else if(modeType == Mode.PATH_FINDING_TIME){
+			double speedValue = s.getRoad().getSpeedValue();
+			double classType = s.getRoad().getClassType()+1;
+			return ((s.getLength()) / (speedValue))/classType;
+		}
+		else throw new UnsupportedOperationException("Mode type is incorrect");
+		
+	}
 
 
 
